@@ -1,14 +1,25 @@
-import './globals.css';
+import { NextResponse } from 'next/server';
+import { GoogleGenAI } from '@google/genai';
 
-export const metadata = {
-  title: 'ApinnAI - Gemini Clone',
-  description: 'AI Web Application built with Next.js and Gemini API',
-};
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-export default function RootLayout({ children }) {
-  return (
-    <html lang="id">
-      <body className="bg-[#131314] text-[#E3E3E3]">{children}</body>
-    </html>
-  );
+export async function POST(req) {
+  try {
+    const { messages } = await req.json();
+    if (!messages || messages.length === 0) {
+      return NextResponse.json({ reply: 'Pesan kosong.' }, { status: 400 });
+    }
+
+    const latestMessage = messages[messages.length - 1].content;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: latestMessage,
+    });
+
+    return NextResponse.json({ reply: response.text });
+  } catch (error) {
+    console.error('Gemini API Error:', error);
+    return NextResponse.json({ reply: 'Terjadi kesalahan pada server AI.' }, { status: 500 });
+  }
 }
